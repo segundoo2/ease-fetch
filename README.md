@@ -11,7 +11,7 @@ For complete documentation, examples, and API reference, visit:
 ## 🚀 Quick Start
 
 ```bash
-npm install ease-fetch
+npm install github:segundoo2/ease-fetch
 ```
 
 ```javascript
