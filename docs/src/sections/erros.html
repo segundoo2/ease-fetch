@@ -1,0 +1,43 @@
+<section>
+  <h2>🛡️ Tratamento de Erros</h2>
+  <p>
+    Na programação, coisas podem dar errado (como o Wi-Fi cair). O Ease-Fetch
+    usa um sistema chamado <strong>Try/Catch</strong> (Tentar/Pegar) para lidar
+    com isso.
+  </p>
+
+  <h3>Como capturar falhas</h3>
+  <p>
+    Ao envolver sua chamada em um bloco <code>try</code>, você garante que, se
+    houver um erro, o código dentro do <code>catch</code> será executado,
+    permitindo que você mostre uma mensagem amigável ao usuário.
+  </p>
+
+  <div class="card">
+    <pre><code>try {
+  const data = await api.get('/perfil');
+  console.log('Dados carregados:', data);
+} catch (error) {
+  // Se o servidor der erro 404 ou 500, o código cai aqui
+  console.error('Ops! Algo deu errado:', error.message);
+  alert('Não foi possível carregar os dados. Tente novamente mais tarde.');
+}</code></pre>
+  </div>
+
+  <h3>Propriedades do Erro</h3>
+  <p>
+    O objeto de erro retornado pelo Ease-Fetch contém informações úteis para o
+    desenvolvedor:
+  </p>
+  <ul>
+    <li>
+      <code>error.status</code>: O código numérico do erro (ex: 404 para "Não
+      encontrado").
+    </li>
+    <li><code>error.message</code>: Uma descrição textual do que aconteceu.</li>
+    <li>
+      <code>error.data</code>: Caso o servidor tenha enviado um detalhe extra
+      sobre o erro.
+    </li>
+  </ul>
+</section>

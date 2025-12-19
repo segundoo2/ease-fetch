@@ -1,0 +1,24 @@
+<section>
+  <h2>🔥 Recursos Avançados</h2>
+
+  
+  <div class="api-item">
+      <h3>Interceptors: O "Pedágio" da Requisição</h3>
+      <p>
+        Interceptors são funções que rodam <strong>antes</strong> da requisição sair
+        ou <strong>depois</strong> que a resposta chega. É o lugar perfeito para
+        injetar Tokens JWT.
+      </p>
+    <pre><code>api.addRequestInterceptor(async (endpoint, options) => {
+  // Adiciona o Token de login automaticamente em todas as chamadas
+  const token = localStorage.getItem('auth_token');
+  
+  options.headers = { 
+    ...options.headers, 
+    Authorization: `Bearer ${token}` 
+  };
+  
+  return [endpoint, options];
+});</code></pre>
+  </div>
+</section>

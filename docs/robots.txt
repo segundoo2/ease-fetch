@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://segundoo2.github.io/ease-fetch/sitemap.xml

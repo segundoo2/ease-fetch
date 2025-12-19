@@ -1,0 +1,18 @@
+<section>
+  <h2>🚀 Quick Start</h2>
+  <div class="api-item">
+    <p>
+      O Ease-Fetch simplifica suas requisições HTTP. Primeiro, instale a
+      biblioteca:
+    </p>
+    <pre><code>npm install ease-fetch</code></pre>
+  </div>
+
+  <div class="api-item">
+    <h3>Primeiro Request</h3>
+    <p>Esqueça a conversão manual de JSON. O dado já vem pronto:</p>
+    <pre><code>import { createApiClient } from 'ease-fetch';
+const api = createApiClient({ baseURL: 'https://api.tvmaze.com' });
+const shows = await api.get('/search/shows?q=girls');</code></pre>
+  </div>
+</section>

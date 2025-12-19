@@ -1,0 +1,36 @@
+<section id="api">
+  <h2>📖 Referência da API</h2>
+  <p>
+    Aqui estão as opções que você pode passar ao criar seu cliente com
+    <code>createApiClient</code>.
+  </p>
+
+  <div class="api-list">
+    <div class="api-item">
+      <code>baseURL</code>
+      <p>
+        O endereço do seu servidor. Economiza tempo para você não precisar
+        digitar "https://api.easefetch.com/" em toda função <code>get</code> ou
+        <code>post</code>.
+      </p>
+    </div>
+
+    <div class="api-item">
+      <code>timeoutMs</code>
+      <p>
+        Evita que seu usuário fique esperando eternamente em uma conexão ruim.
+        Se a API não responder no tempo definido, o Ease-Fetch cancela a chamada
+        com segurança.
+      </p>
+    </div>
+
+    <div class="api-item">
+      <code>maxRetries</code>
+      <p>
+        <strong>Resiliência automática:</strong> Se a API falhar por um erro
+        temporário no servidor (Erro 500), a biblioteca tenta realizar a chamada
+        novamente antes de mostrar um erro ao usuário.
+      </p>
+    </div>
+  </div>
+</section>
