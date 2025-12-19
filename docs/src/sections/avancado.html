@@ -1,24 +1,340 @@
 <section>
   <h2>🔥 Recursos Avançados</h2>
 
-  
-  <div class="api-item">
-      <h3>Interceptors: O "Pedágio" da Requisição</h3>
+  <h3>Sistema de Interceptors</h3>
+  <p>
+    Interceptors permitem interceptar e modificar requisições e respostas. São
+    executados em ordem de registro, criando um pipeline de processamento
+    poderoso e flexível.
+  </p>
+
+  <div class="api-list">
+    <div class="api-item">
+      <h4>Request Interceptors</h4>
       <p>
-        Interceptors são funções que rodam <strong>antes</strong> da requisição sair
-        ou <strong>depois</strong> que a resposta chega. É o lugar perfeito para
-        injetar Tokens JWT.
+        Executados <strong>antes</strong> da requisição ser enviada. Use para
+        adicionar autenticação, logging, modificar URLs ou headers:
       </p>
-    <pre><code>api.addRequestInterceptor(async (endpoint, options) => {
-  // Adiciona o Token de login automaticamente em todas as chamadas
+      <pre><code>// Autenticação JWT automática
+api.addRequestInterceptor((endpoint, options) => {
   const token = localStorage.getItem('auth_token');
   
-  options.headers = { 
-    ...options.headers, 
-    Authorization: `Bearer ${token}` 
-  };
+  if (token) {
+    options.headers = {
+      ...options.headers,
+      Authorization: `Bearer ${token}`
+    };
+  }
   
   return [endpoint, options];
+});
+
+// Logging de requisições
+api.addRequestInterceptor((endpoint, options) => {
+  console.log(`[REQUEST] ${options.method || 'GET'} ${endpoint}`);
+  console.log('Headers:', options.headers);
+  console.log('Body:', options.body);
+  
+  return [endpoint, options];
+});
+
+// Modificar endpoint dinamicamente
+api.addRequestInterceptor((endpoint, options) => {
+  // Adiciona versão da API
+  const versionedEndpoint = `/v2${endpoint}`;
+  return [versionedEndpoint, options];
 });</code></pre>
+    </div>
+
+    <div class="api-item">
+      <h4>Response Interceptors</h4>
+      <p>
+        Executados <strong>após</strong> receber a resposta, mas
+        <strong>antes</strong> do parsing. Use para transformar dados, adicionar
+        metadata ou logging:
+      </p>
+      <pre><code>// Logging de respostas
+api.addResponseInterceptor((response) => {
+  console.log(`[RESPONSE] ${response.status} ${response.url}`);
+  return response;
+});
+
+// Transformar todas as respostas
+api.addResponseInterceptor((response) => {
+  // Adiciona timestamp em todas respostas
+  const originalJson = response.json.bind(response);
+  response.json = async () => {
+    const data = await originalJson();
+    return {
+      ...data,
+      _fetchedAt: new Date().toISOString()
+    };
+  };
+  return response;
+});
+
+// Validar headers de resposta
+api.addResponseInterceptor((response) => {
+  const rateLimit = response.headers.get('X-RateLimit-Remaining');
+  if (rateLimit && parseInt(rateLimit) < 10) {
+    console.warn('⚠️ Rate limit baixo:', rateLimit);
+  }
+  return response;
+});</code></pre>
+    </div>
+
+    <div class="api-item">
+      <h4>Error Interceptors</h4>
+      <p>
+        Executados quando ocorre um erro. Use para tratamento global, logging de
+        erros, refresh de tokens ou retry manual:
+      </p>
+      <pre><code>// Tratamento global de autenticação
+api.addResponseErrorInterceptor((error) => {
+  if (error.status === 401) {
+    localStorage.removeItem('auth_token');
+    window.location.href = '/login';
+  }
+  throw error; // Re-lança para tratamento local
+});
+
+// Logging de erros para serviço externo
+api.addResponseErrorInterceptor((error) => {
+  logToSentry({
+    message: error.message,
+    status: error.status,
+    data: error.data,
+    timestamp: new Date().toISOString()
+  });
+  throw error;
+});
+
+// Refresh token automático
+api.addResponseErrorInterceptor(async (error) => {
+  if (error.status === 401) {
+    try {
+      const newToken = await refreshAuthToken();
+      localStorage.setItem('auth_token', newToken);
+      // Opcionalmente, retentar a requisição original
+    } catch (refreshError) {
+      redirectToLogin();
+    }
+  }
+  throw error;
+});</code></pre>
+    </div>
+  </div>
+
+  <h3>Ordem de Execução dos Interceptors</h3>
+  <p>Interceptors são executados na ordem em que foram registrados:</p>
+  <div class="card">
+    <pre><code>// 1. Registra interceptors na ordem
+api.addRequestInterceptor(interceptor1);   // Executa primeiro
+api.addRequestInterceptor(interceptor2);   // Executa segundo
+api.addRequestInterceptor(interceptor3);   // Executa terceiro
+
+// 2. Fluxo de uma requisição
+Request
+  → interceptor1 (request)
+  → interceptor2 (request)
+  → interceptor3 (request)
+  → Fetch
+  → interceptor1 (response)
+  → interceptor2 (response)
+  → interceptor3 (response)
+  → Parse JSON
+  → Return / Error Interceptors</code></pre>
+  </div>
+
+  <h3>Upload de Arquivos</h3>
+  <p>
+    O Ease-Fetch detecta automaticamente FormData e Blob, configurando os
+    headers corretos:
+  </p>
+
+  <div class="api-item">
+    <h4>Upload Simples</h4>
+    <pre><code>// Upload de arquivo único
+const fileInput = document.querySelector('input[type="file"]');
+const file = fileInput.files[0];
+
+const formData = new FormData();
+formData.append('file', file);
+formData.append('description', 'Foto de perfil');
+
+const result = await api.post('/upload', formData);
+console.log('Arquivo enviado:', result.url);</code></pre>
+  </div>
+
+  <div class="api-item">
+    <h4>Upload Múltiplo</h4>
+    <pre><code>const fileInput = document.querySelector('input[type="file"][multiple]');
+const files = Array.from(fileInput.files);
+
+const formData = new FormData();
+files.forEach((file, index) => {
+  formData.append(`file_${index}`, file);
+});
+
+const result = await api.post('/upload/multiple', formData);
+console.log('Arquivos enviados:', result.files);</code></pre>
+  </div>
+
+  <div class="api-item">
+    <h4>Upload com Progresso</h4>
+    <pre><code>// Usando XMLHttpRequest para progresso (fora do Ease-Fetch)
+function uploadWithProgress(file, onProgress) {
+  return new Promise((resolve, reject) => {
+    const formData = new FormData();
+    formData.append('file', file);
+
+    const xhr = new XMLHttpRequest();
+    
+    xhr.upload.addEventListener('progress', (e) => {
+      if (e.lengthComputable) {
+        const percentComplete = (e.loaded / e.total) * 100;
+        onProgress(percentComplete);
+      }
+    });
+
+    xhr.addEventListener('load', () => {
+      if (xhr.status === 200) {
+        resolve(JSON.parse(xhr.responseText));
+      } else {
+        reject(new Error(`Upload failed: ${xhr.status}`));
+      }
+    });
+
+    xhr.open('POST', 'https://api.example.com/upload');
+    xhr.setRequestHeader('Authorization', `Bearer ${getToken()}`);
+    xhr.send(formData);
+  });
+}
+
+// Uso
+await uploadWithProgress(file, (progress) => {
+  console.log(`Progresso: ${progress.toFixed(2)}%`);
+});</code></pre>
+  </div>
+
+  <h3>Timeout e Cancelamento</h3>
+  <p>Controle fino sobre o ciclo de vida das requisições:</p>
+
+  <div class="api-item">
+    <h4>Timeout Customizado</h4>
+    <pre><code>// Timeout global
+const api = createApiClient({
+  timeoutMs: 5000  // 5 segundos para todas requisições
+});
+
+// Timeout por requisição
+await api.get('/quick-endpoint', { timeoutMs: 2000 });  // 2 segundos
+await api.get('/slow-report', { timeoutMs: 60000 });    // 60 segundos</code></pre>
+  </div>
+
+  <div class="api-item">
+    <h4>Cancelamento Manual</h4>
+    <pre><code>// Cria um AbortController
+const controller = new AbortController();
+
+// Inicia requisição com signal
+const promise = api.get('/long-running', {
+  signal: controller.signal
+});
+
+// Cancela após 3 segundos
+setTimeout(() => {
+  controller.abort();
+  console.log('Requisição cancelada');
+}, 3000);
+
+try {
+  const data = await promise;
+} catch (error) {
+  if (error.name === 'AbortError') {
+    console.log('Requisição foi cancelada pelo usuário');
+  }
+}</code></pre>
+  </div>
+
+  <h3>Custom Fetch Implementation</h3>
+  <p>
+    Para ambientes que não têm fetch nativo ou para usar bibliotecas
+    customizadas:
+  </p>
+  <pre><code>import nodeFetch from 'node-fetch';
+
+const api = createApiClient({
+  baseURL: 'https://api.example.com',
+  fetchImpl: nodeFetch  // Use node-fetch em vez do fetch nativo
+});</code></pre>
+
+  <h3>Logging e Debug</h3>
+  <p>Configure logs para desenvolvimento e debugging:</p>
+  <pre><code>const api = createApiClient({
+  baseURL: 'https://api.example.com',
+  logger: {
+    debug: (...args) => {
+      if (process.env.NODE_ENV === 'development') {
+        console.log('[DEBUG]', ...args);
+      }
+    },
+    error: (...args) => {
+      console.error('[ERROR]', ...args);
+      // Enviar para serviço de monitoramento
+      sendToMonitoring(...args);
+    }
+  }
+});</code></pre>
+
+  <h3>Padrões de Organização</h3>
+
+  <div class="api-item">
+    <h4>Módulo de API Centralizado</h4>
+    <pre><code>// api/client.js
+import { createApiClient } from 'ease-fetch';
+
+const api = createApiClient({
+  baseURL: process.env.REACT_APP_API_URL,
+  timeoutMs: 10000,
+  maxRetries: 3
+});
+
+// Adiciona interceptors
+api.addRequestInterceptor((endpoint, options) => {
+  const token = getAuthToken();
+  if (token) {
+    options.headers = { ...options.headers, Authorization: `Bearer ${token}` };
+  }
+  return [endpoint, options];
+});
+
+export default api;</code></pre>
+  </div>
+
+  <div class="api-item">
+    <h4>Serviços por Domínio</h4>
+    <pre><code>// api/users.service.js
+import api from './client';
+
+export const UsersService = {
+  getAll: () => api.get('/users'),
+  
+  getById: (id) => api.get(`/users/${id}`),
+  
+  create: (userData) => api.post('/users', userData),
+  
+  update: (id, userData) => api.patch(`/users/${id}`, userData),
+  
+  delete: (id) => api.delete(`/users/${id}`),
+  
+  search: (query) => api.get(`/users/search?q=${query}`)
+};
+
+// Uso
+import { UsersService } from './api/users.service';
+
+const users = await UsersService.getAll();
+const user = await UsersService.getById(123);</code></pre>
   </div>
 </section>

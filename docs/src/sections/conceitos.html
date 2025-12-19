@@ -1,11 +1,217 @@
 <section>
-  <h2>📚 Conceitos Básicos</h2>
-  <div class="api-item">
-    <p>Centralize a configuração para facilitar a manutenção do código.</p>
-    <pre><code>const api = createApiClient({
-  baseURL: 'https://api.exemplo.com',
+  <h2>📚 Conceitos Fundamentais</h2>
+
+  <h3>Instância do Cliente</h3>
+  <p>
+    O Ease-Fetch utiliza o padrão de design <strong>Factory</strong>. Você cria
+    uma instância do cliente configurada com suas preferências e a reutiliza em
+    toda aplicação:
+  </p>
+  <pre><code>import { createApiClient } from 'ease-fetch';
+
+// Crie uma instância configurada
+const api = createApiClient({
+  baseURL: 'https://api.example.com',
   timeoutMs: 10000,
   maxRetries: 3
+});
+
+// Reutilize em diferentes partes da aplicação
+export default api;</code></pre>
+
+  <h3>Base URL</h3>
+  <p>
+    A <code>baseURL</code> é prefixada automaticamente em todos os endpoints.
+    Isso centraliza a configuração e facilita a migração entre ambientes
+    (desenvolvimento, staging, produção):
+  </p>
+  <pre><code>const api = createApiClient({
+  baseURL: 'https://api.example.com'
+});
+
+// Requisição para: https://api.example.com/users
+await api.get('/users');
+
+// Requisição para: https://api.example.com/posts/123
+await api.get('/posts/123');</code></pre>
+
+  <div class="card">
+    <p>
+      <strong>💡 Dica:</strong> Use variáveis de ambiente para configurar
+      diferentes URLs por ambiente:
+    </p>
+    <pre><code>const api = createApiClient({
+  baseURL: process.env.API_URL || 'http://localhost:3000'
 });</code></pre>
   </div>
+
+  <h3>Métodos HTTP</h3>
+  <p>
+    O Ease-Fetch oferece métodos para cada verbo HTTP, com assinaturas
+    consistentes e intuitivas:
+  </p>
+
+  <div class="api-list">
+    <div class="api-item">
+      <h4>GET - Buscar Dados</h4>
+      <p>Usado para recuperar recursos sem modificar o servidor.</p>
+      <pre><code>// Buscar lista
+const users = await api.get('/users');
+
+// Buscar recurso específico
+const user = await api.get('/users/123');
+
+// Com query parameters
+const filtered = await api.get('/users?role=admin&active=true');</code></pre>
+    </div>
+
+    <div class="api-item">
+      <h4>POST - Criar Recursos</h4>
+      <p>Usado para criar novos recursos no servidor.</p>
+      <pre><code>const newUser = await api.post('/users', {
+  name: 'João Silva',
+  email: 'joao@example.com',
+  role: 'user'
+});</code></pre>
+    </div>
+
+    <div class="api-item">
+      <h4>PUT - Substituir Completamente</h4>
+      <p>
+        Substitui todo o recurso com os novos dados. Todos os campos devem ser
+        enviados.
+      </p>
+      <pre><code>// Substitui TODOS os dados do usuário 123
+const updated = await api.put('/users/123', {
+  name: 'João Santos',
+  email: 'joao.santos@example.com',
+  role: 'admin',
+  active: true
+  // Todos os campos necessários
+});</code></pre>
+    </div>
+
+    <div class="api-item">
+      <h4>PATCH - Atualizar Parcialmente</h4>
+      <p>
+        Atualiza apenas os campos especificados, mantendo os demais inalterados.
+      </p>
+      <pre><code>// Atualiza apenas o email
+const patched = await api.patch('/users/123', {
+  email: 'novo.email@example.com'
+  // Outros campos permanecem iguais
+});</code></pre>
+    </div>
+
+    <div class="api-item">
+      <h4>DELETE - Remover Recursos</h4>
+      <p>Remove um recurso do servidor.</p>
+      <pre><code>// Retorna vazio (status 204) ou confirmação
+await api.delete('/users/123');</code></pre>
+    </div>
+  </div>
+
+  <h3>Idempotência e Retry</h3>
+  <p>
+    <strong>Métodos idempotentes</strong> (GET, PUT, DELETE) podem ser
+    executados múltiplas vezes sem causar efeitos colaterais diferentes. O
+    Ease-Fetch aproveita isso para retry automático:
+  </p>
+
+  <div class="card">
+    <pre><code>// ✅ GET, PUT, DELETE - Retry automático em erro 5xx
+await api.get('/users');     // Até 3 tentativas
+await api.put('/users/1');   // Até 3 tentativas
+await api.delete('/users/1'); // Até 3 tentativas
+
+// ❌ POST, PATCH - SEM retry (não são idempotentes)
+await api.post('/users');    // Apenas 1 tentativa
+await api.patch('/users/1'); // Apenas 1 tentativa</code></pre>
+    <p>
+      <strong>Por quê?</strong> POST pode criar recursos duplicados se executado
+      duas vezes. PATCH pode aplicar a mesma modificação múltiplas vezes com
+      resultados imprevisíveis.
+    </p>
+  </div>
+
+  <h3>Headers e Content-Type</h3>
+  <p>
+    O Ease-Fetch gerencia headers automaticamente, mas você pode customizá-los
+    quando necessário:
+  </p>
+
+  <div class="api-item">
+    <h4>Headers Automáticos</h4>
+    <pre><code>// JSON - Content-Type: application/json (automático)
+await api.post('/users', { name: 'João' });
+
+// FormData - Content-Type: multipart/form-data (automático)
+const form = new FormData();
+form.append('file', file);
+await api.post('/upload', form);</code></pre>
+  </div>
+
+  <div class="api-item">
+    <h4>Headers Customizados</h4>
+    <pre><code>// Por requisição
+await api.get('/users', {
+  headers: {
+    'X-Custom-Header': 'valor',
+    'Accept-Language': 'pt-BR'
+  }
+});
+
+// Globalmente via interceptor (recomendado)
+api.addRequestInterceptor((endpoint, options) => {
+  options.headers = {
+    ...options.headers,
+    'X-API-Version': '2.0'
+  };
+  return [endpoint, options];
+});</code></pre>
+  </div>
+
+  <h3>Respostas HTTP</h3>
+  <p>
+    O Ease-Fetch processa automaticamente as respostas baseado no Content-Type:
+  </p>
+
+  <div class="api-list">
+    <div class="api-item">
+      <h4>JSON (Padrão)</h4>
+      <pre><code>// Response: { "id": 1, "name": "João" }
+const user = await api.get('/users/1');
+console.log(user.name); // "João"</code></pre>
+    </div>
+
+    <div class="api-item">
+      <h4>Texto Puro</h4>
+      <pre><code>// Response: "Hello World"
+const text = await api.get('/message');
+console.log(text); // "Hello World"</code></pre>
+    </div>
+
+    <div class="api-item">
+      <h4>Status 204 (No Content)</h4>
+      <pre><code>// DELETE geralmente retorna 204 sem corpo
+const result = await api.delete('/users/1');
+console.log(result); // null</code></pre>
+    </div>
+  </div>
+
+  <h3>Configurações por Requisição</h3>
+  <p>
+    Você pode sobrescrever configurações globais em requisições específicas:
+  </p>
+  <pre><code>const api = createApiClient({
+  timeoutMs: 5000  // Padrão: 5 segundos
+});
+
+// Sobrescreve apenas para essa requisição
+await api.get('/slow-report', {
+  timeoutMs: 60000  // 60 segundos apenas aqui
+});
+
+// Outras requisições continuam com 5 segundos
+await api.get('/users'); // 5 segundos</code></pre>
 </section>

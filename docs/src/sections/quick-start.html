@@ -1,18 +1,118 @@
 <section>
   <h2>🚀 Quick Start</h2>
-  <div class="api-item">
-    <p>
-      O Ease-Fetch simplifica suas requisições HTTP. Primeiro, instale a
-      biblioteca:
-    </p>
-    <pre><code>npm install ease-fetch</code></pre>
-  </div>
 
-  <div class="api-item">
-    <h3>Primeiro Request</h3>
-    <p>Esqueça a conversão manual de JSON. O dado já vem pronto:</p>
-    <pre><code>import { createApiClient } from 'ease-fetch';
-const api = createApiClient({ baseURL: 'https://api.tvmaze.com' });
-const shows = await api.get('/search/shows?q=girls');</code></pre>
-  </div>
+  <h3>Instalação</h3>
+  <p>Instale o Ease-Fetch diretamente do repositório GitHub:</p>
+  <pre><code>npm install github:segundoo2/ease-fetch</code></pre>
+
+  <h3>Configuração Básica</h3>
+  <p>
+    Crie uma instância do cliente configurando a URL base da sua API. Isso evita
+    repetir o endereço completo em cada requisição:
+  </p>
+  <pre><code>import { createApiClient } from 'ease-fetch';
+
+const api = createApiClient({
+  baseURL: 'https://api.example.com',
+  timeoutMs: 10000,  // 10 segundos de timeout
+  maxRetries: 3       // Até 3 tentativas em caso de erro 5xx
+});</code></pre>
+
+  <h3>Primeira Requisição</h3>
+  <p>
+    Com o cliente configurado, fazer requisições é simples e direto. O parsing
+    de JSON é automático:
+  </p>
+  <pre><code>// GET - Buscar todos os usuários
+const users = await api.get('/users');
+console.log(users);
+
+// GET com parâmetros na URL
+const filteredUsers = await api.get('/users?role=admin&status=active');</code></pre>
+
+  <h3>Enviando Dados</h3>
+  <p>
+    Para criar ou atualizar recursos, use os métodos POST, PUT ou PATCH. O
+    Ease-Fetch serializa objetos JavaScript para JSON automaticamente:
+  </p>
+  <pre><code>// POST - Criar novo usuário
+const newUser = await api.post('/users', {
+  name: 'Maria Silva',
+  email: 'maria@example.com',
+  role: 'admin'
+});
+
+// PUT - Substituir completamente um recurso
+const updatedUser = await api.put('/users/123', {
+  name: 'Maria Santos',
+  email: 'maria.santos@example.com',
+  role: 'admin'
+});
+
+// PATCH - Atualizar parcialmente
+const patched = await api.patch('/users/123', {
+  email: 'novo.email@example.com'  // Apenas o email muda
+});
+
+// DELETE - Remover recurso
+await api.delete('/users/123');</code></pre>
+
+  <h3>Exemplo Completo</h3>
+  <p>
+    Veja um fluxo completo de CRUD (Create, Read, Update, Delete) com tratamento
+    de erros:
+  </p>
+  <pre><code>import { createApiClient } from 'ease-fetch';
+
+const api = createApiClient({ 
+  baseURL: 'https://jsonplaceholder.typicode.com' 
+});
+
+async function gerenciarUsuarios() {
+  try {
+    // CREATE - Criar usuário
+    const novoUsuario = await api.post('/users', {
+      name: 'João Silva',
+      email: 'joao@example.com'
+    });
+    console.log('Usuário criado:', novoUsuario);
+
+    // READ - Buscar usuário criado
+    const usuario = await api.get(`/users/${novoUsuario.id}`);
+    console.log('Usuário encontrado:', usuario);
+
+    // UPDATE - Atualizar email
+    const atualizado = await api.patch(`/users/${novoUsuario.id}`, {
+      email: 'joao.novo@example.com'
+    });
+    console.log('Usuário atualizado:', atualizado);
+
+    // DELETE - Remover usuário
+    await api.delete(`/users/${novoUsuario.id}`);
+    console.log('Usuário removido');
+
+  } catch (error) {
+    console.error('Erro:', error.message);
+    console.error('Status:', error.status);
+  }
+}
+
+gerenciarUsuarios();</code></pre>
+
+  <h3>Próximos Passos</h3>
+  <p>Agora que você domina o básico, explore:</p>
+  <ul>
+    <li>
+      <strong>Interceptors:</strong> Adicione autenticação automática e logging
+    </li>
+    <li>
+      <strong>Tratamento de Erros:</strong> Capture e trate falhas de forma
+      elegante
+    </li>
+    <li><strong>Uploads:</strong> Envie arquivos com FormData</li>
+    <li>
+      <strong>Configuração Avançada:</strong> Customize timeouts, retries e
+      headers
+    </li>
+  </ul>
 </section>

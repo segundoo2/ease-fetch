@@ -1,43 +1,190 @@
 <section>
   <h2>🛡️ Tratamento de Erros</h2>
-  <p>
-    Na programação, coisas podem dar errado (como o Wi-Fi cair). O Ease-Fetch
-    usa um sistema chamado <strong>Try/Catch</strong> (Tentar/Pegar) para lidar
-    com isso.
-  </p>
 
-  <h3>Como capturar falhas</h3>
+  <h3>Estrutura do Erro</h3>
   <p>
-    Ao envolver sua chamada em um bloco <code>try</code>, você garante que, se
-    houver um erro, o código dentro do <code>catch</code> será executado,
-    permitindo que você mostre uma mensagem amigável ao usuário.
+    Quando uma requisição falha, o Ease-Fetch lança um objeto
+    <code>ApiError</code> com informações estruturadas:
   </p>
 
   <div class="card">
-    <pre><code>try {
-  const data = await api.get('/perfil');
-  console.log('Dados carregados:', data);
-} catch (error) {
-  // Se o servidor der erro 404 ou 500, o código cai aqui
-  console.error('Ops! Algo deu errado:', error.message);
-  alert('Não foi possível carregar os dados. Tente novamente mais tarde.');
+    <pre><code>interface ApiError {
+  message: string;  // Descrição do erro (ex: "Not Found")
+  status?: number;  // Código HTTP (ex: 404, 500)
+  data?: unknown;   // Corpo da resposta do servidor (se disponível)
 }</code></pre>
   </div>
 
-  <h3>Propriedades do Erro</h3>
+  <h3>Capturando Erros</h3>
   <p>
-    O objeto de erro retornado pelo Ease-Fetch contém informações úteis para o
-    desenvolvedor:
+    Use blocos <code>try/catch</code> para capturar e tratar erros de forma
+    elegante:
   </p>
+
+  <div class="api-item">
+    <h4>Tratamento Básico</h4>
+    <pre><code>try {
+  const user = await api.get('/users/999');
+  console.log(user);
+} catch (error) {
+  console.error('Erro na requisição:', error.message);
+  // Erro na requisição: Not Found
+}</code></pre>
+  </div>
+
+  <div class="api-item">
+    <h4>Verificação de Status HTTP</h4>
+    <pre><code>try {
+  const data = await api.post('/users', userData);
+  showSuccessMessage('Usuário criado!');
+} catch (error) {
+  if (error.status === 400) {
+    showError('Dados inválidos. Verifique os campos.');
+  } else if (error.status === 401) {
+    redirectToLogin();
+  } else if (error.status === 409) {
+    showError('Email já cadastrado.');
+  } else if (error.status >= 500) {
+    showError('Erro no servidor. Tente novamente mais tarde.');
+  } else {
+    showError('Erro desconhecido.');
+  }
+}</code></pre>
+  </div>
+
+  <div class="api-item">
+    <h4>Acessando Detalhes do Erro</h4>
+    <p>O servidor pode retornar informações adicionais no corpo da resposta:</p>
+    <pre><code>try {
+  await api.post('/users', { email: 'invalid' });
+} catch (error) {
+  console.log('Status:', error.status);        // 400
+  console.log('Mensagem:', error.message);     // Bad Request
+  console.log('Detalhes:', error.data);        
+  // { field: 'email', error: 'Invalid email format' }
+  
+  // Exibir mensagem específica do servidor
+  if (error.data?.field) {
+    showError(`${error.data.field}: ${error.data.error}`);
+  }
+}</code></pre>
+  </div>
+
+  <h3>Tratamento Global com Error Interceptors</h3>
+  <p>
+    Para evitar repetição de código, use interceptors de erro para tratamento
+    centralizado:
+  </p>
+
+  <div class="api-item">
+    <pre><code>api.addResponseErrorInterceptor((error) => {
+  // Logging automático
+  console.error('API Error:', {
+    status: error.status,
+    message: error.message,
+    data: error.data,
+    timestamp: new Date().toISOString()
+  });
+
+  // Tratamento global de autenticação
+  if (error.status === 401) {
+    localStorage.removeItem('token');
+    window.location.href = '/login';
+  }
+
+  // Tratamento global de erros de servidor
+  if (error.status >= 500) {
+    showToast('Erro no servidor. Tente novamente em alguns instantes.', 'error');
+  }
+
+  // Re-lança o erro para tratamento local
+  throw error;
+});</code></pre>
+  </div>
+
+  <h3>Erros de Timeout</h3>
+  <p>
+    Quando uma requisição excede o tempo limite configurado, um erro de timeout
+    é lançado:
+  </p>
+
+  <div class="api-item">
+    <pre><code>try {
+  const data = await api.get('/slow-endpoint', {
+    timeoutMs: 5000 // 5 segundos
+  });
+} catch (error) {
+  if (error.name === 'AbortError') {
+    showError('A requisição demorou muito e foi cancelada.');
+  }
+}</code></pre>
+  </div>
+
+  <h3>Códigos HTTP Comuns</h3>
+  <div class="api-list">
+    <div class="api-item">
+      <h4>2xx - Sucesso</h4>
+      <ul>
+        <li><code>200 OK</code> - Requisição bem-sucedida</li>
+        <li><code>201 Created</code> - Recurso criado com sucesso</li>
+        <li><code>204 No Content</code> - Sucesso sem corpo de resposta</li>
+      </ul>
+    </div>
+
+    <div class="api-item">
+      <h4>4xx - Erros do Cliente</h4>
+      <ul>
+        <li><code>400 Bad Request</code> - Dados inválidos ou malformados</li>
+        <li>
+          <code>401 Unauthorized</code> - Autenticação necessária ou token
+          inválido
+        </li>
+        <li>
+          <code>403 Forbidden</code> - Sem permissão para acessar o recurso
+        </li>
+        <li><code>404 Not Found</code> - Recurso não encontrado</li>
+        <li><code>409 Conflict</code> - Conflito (ex: email duplicado)</li>
+        <li><code>422 Unprocessable Entity</code> - Validação falhou</li>
+        <li><code>429 Too Many Requests</code> - Rate limit excedido</li>
+      </ul>
+    </div>
+
+    <div class="api-item">
+      <h4>5xx - Erros do Servidor (Retry automático)</h4>
+      <ul>
+        <li>
+          <code>500 Internal Server Error</code> - Erro genérico no servidor
+        </li>
+        <li>
+          <code>502 Bad Gateway</code> - Servidor intermediário com problema
+        </li>
+        <li>
+          <code>503 Service Unavailable</code> - Servidor temporariamente
+          indisponível
+        </li>
+        <li>
+          <code>504 Gateway Timeout</code> - Servidor não respondeu a tempo
+        </li>
+      </ul>
+      <p>
+        <strong>Nota:</strong> Para métodos GET, PUT e DELETE, o Ease-Fetch
+        tenta automaticamente até 3 vezes antes de lançar o erro.
+      </p>
+    </div>
+  </div>
+
+  <h3>Boas Práticas</h3>
   <ul>
+    <li>✅ Sempre use try/catch em requisições assíncronas</li>
+    <li>✅ Forneça feedback visual ao usuário em caso de erro</li>
+    <li>✅ Use error interceptors para logging e tratamento global</li>
+    <li>✅ Trate erros 401 redirecionando para login</li>
+    <li>✅ Mostre mensagens específicas baseadas no código de status</li>
+    <li>✅ Use error.data para exibir mensagens detalhadas do servidor</li>
+    <li>❌ Não silencie erros sem feedback ao usuário</li>
     <li>
-      <code>error.status</code>: O código numérico do erro (ex: 404 para "Não
-      encontrado").
-    </li>
-    <li><code>error.message</code>: Uma descrição textual do que aconteceu.</li>
-    <li>
-      <code>error.data</code>: Caso o servidor tenha enviado um detalhe extra
-      sobre o erro.
+      ❌ Não confie apenas em tratamento global - combine com local quando
+      necessário
     </li>
   </ul>
 </section>

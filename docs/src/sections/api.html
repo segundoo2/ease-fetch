@@ -1,36 +1,358 @@
 <section id="api">
   <h2>📖 Referência da API</h2>
+
+  <h3>createApiClient(options?)</h3>
   <p>
-    Aqui estão as opções que você pode passar ao criar seu cliente com
-    <code>createApiClient</code>.
+    Cria e retorna uma nova instância do cliente HTTP configurada com as opções
+    fornecidas.
   </p>
+
+  <h4>Parâmetros</h4>
+  <div class="api-list">
+    <div class="api-item">
+      <code>baseURL?: string</code>
+      <p>
+        URL base que será prefixada automaticamente em todos os endpoints. Útil
+        para centralizar a configuração e evitar repetição.
+      </p>
+      <pre><code>// Exemplo
+const api = createApiClient({
+  baseURL: 'https://api.example.com'
+});
+
+// Requisição para: https://api.example.com/users
+await api.get('/users');</code></pre>
+    </div>
+
+    <div class="api-item">
+      <code>timeoutMs?: number</code>
+      <p>
+        Tempo máximo em milissegundos que uma requisição pode levar antes de ser
+        cancelada automaticamente. Padrão:
+        <strong>10000ms (10 segundos)</strong>.
+      </p>
+      <pre><code>// Timeout global de 5 segundos
+const api = createApiClient({
+  timeoutMs: 5000
+});
+
+// Sobrescreve apenas para essa requisição
+await api.get('/slow-endpoint', {
+  timeoutMs: 30000 // 30 segundos
+});</code></pre>
+    </div>
+
+    <div class="api-item">
+      <code>maxRetries?: number</code>
+      <p>
+        Número máximo de tentativas automáticas para requisições que falharem
+        com erros de servidor (5xx). Apenas métodos idempotentes (GET, PUT,
+        DELETE) são retentados. Padrão: <strong>3</strong>.
+      </p>
+      <pre><code>const api = createApiClient({
+  maxRetries: 5 // Até 5 tentativas em caso de erro 5xx
+});</code></pre>
+      <p>
+        O tempo entre tentativas usa <strong>backoff exponencial</strong>:
+        300ms, 600ms, 1200ms...
+      </p>
+    </div>
+
+    <div class="api-item">
+      <code>fetchImpl?: typeof fetch</code>
+      <p>
+        Implementação customizada da função fetch. Útil para ambientes Node.js
+        ou para testes.
+      </p>
+      <pre><code>import nodeFetch from 'node-fetch';
+
+const api = createApiClient({
+  fetchImpl: nodeFetch
+});</code></pre>
+    </div>
+
+    <div class="api-item">
+      <code>logger?: { debug?, error? }</code>
+      <p>
+        Objeto com funções de logging para debug e erro. Útil para
+        desenvolvimento e monitoramento.
+      </p>
+      <pre><code>const api = createApiClient({
+  logger: {
+    debug: (...args) => console.log('[DEBUG]', ...args),
+    error: (...args) => console.error('[ERROR]', ...args)
+  }
+});</code></pre>
+    </div>
+  </div>
+
+  <h3>Métodos HTTP</h3>
 
   <div class="api-list">
     <div class="api-item">
-      <code>baseURL</code>
+      <h4>get&lt;T&gt;(endpoint, options?): Promise&lt;T&gt;</h4>
+      <p>Executa uma requisição GET para buscar dados.</p>
+      <pre><code>// Buscar todos os usuários
+const users = await api.get('/users');
+
+// Com tipo específico
+interface User { id: number; name: string; }
+const user = await api.get&lt;User&gt;('/users/123');
+
+// Com opções
+const data = await api.get('/users', {
+  headers: { 'Accept-Language': 'pt-BR' },
+  timeoutMs: 5000
+});</code></pre>
+    </div>
+
+    <div class="api-item">
+      <h4>post&lt;T&gt;(endpoint, body?, options?): Promise&lt;T&gt;</h4>
+      <p>Executa uma requisição POST para criar recursos.</p>
+      <pre><code>// JSON automático
+const newUser = await api.post('/users', {
+  name: 'João Silva',
+  email: 'joao@example.com'
+});
+
+// FormData automático
+const formData = new FormData();
+formData.append('file', file);
+const result = await api.post('/upload', formData);
+
+// Blob
+await api.post('/image', blobData);</code></pre>
+    </div>
+
+    <div class="api-item">
+      <h4>put&lt;T&gt;(endpoint, body?, options?): Promise&lt;T&gt;</h4>
       <p>
-        O endereço do seu servidor. Economiza tempo para você não precisar
-        digitar "https://api.easefetch.com/" em toda função <code>get</code> ou
-        <code>post</code>.
+        Executa uma requisição PUT para substituir completamente um recurso.
+      </p>
+      <pre><code>const updated = await api.put('/users/123', {
+  name: 'João Santos',
+  email: 'joao.santos@example.com',
+  role: 'admin'
+});</code></pre>
+    </div>
+
+    <div class="api-item">
+      <h4>patch&lt;T&gt;(endpoint, body?, options?): Promise&lt;T&gt;</h4>
+      <p>
+        Executa uma requisição PATCH para atualizar parcialmente um recurso.
+      </p>
+      <pre><code>// Atualiza apenas o email
+const patched = await api.patch('/users/123', {
+  email: 'novo@example.com'
+});</code></pre>
+    </div>
+
+    <div class="api-item">
+      <h4>delete&lt;T&gt;(endpoint, options?): Promise&lt;T&gt;</h4>
+      <p>Executa uma requisição DELETE para remover um recurso.</p>
+      <pre><code>await api.delete('/users/123');</code></pre>
+    </div>
+
+    <div class="api-item">
+      <h4>request&lt;T&gt;(endpoint, options): Promise&lt;T&gt;</h4>
+      <p>
+        Método genérico que permite especificar qualquer verbo HTTP manualmente.
+      </p>
+      <pre><code>const data = await api.request('/users', {
+  method: 'OPTIONS',
+  headers: { 'Custom-Header': 'value' }
+});</code></pre>
+    </div>
+  </div>
+
+  <h3>RequestOptions</h3>
+  <p>Objeto de configuração aceito por todos os métodos HTTP:</p>
+
+  <div class="api-list">
+    <div class="api-item">
+      <code>method?: string</code>
+      <p>
+        Verbo HTTP (GET, POST, PUT, PATCH, DELETE, etc). Definido
+        automaticamente pelos métodos específicos.
       </p>
     </div>
 
     <div class="api-item">
-      <code>timeoutMs</code>
+      <code>body?: BodyInit | null</code>
       <p>
-        Evita que seu usuário fique esperando eternamente em uma conexão ruim.
-        Se a API não responder no tempo definido, o Ease-Fetch cancela a chamada
-        com segurança.
+        Corpo da requisição. Pode ser: JSON object, FormData, Blob, string,
+        ArrayBuffer, etc.
       </p>
     </div>
 
     <div class="api-item">
-      <code>maxRetries</code>
+      <code>headers?: HeadersObj | Headers</code>
+      <p>Headers HTTP customizados. Mesclados com headers padrão.</p>
+      <pre><code>await api.get('/users', {
+  headers: {
+    'Accept-Language': 'pt-BR',
+    'X-Custom-Header': 'valor'
+  }
+});</code></pre>
+    </div>
+
+    <div class="api-item">
+      <code>timeoutMs?: number</code>
+      <p>Sobrescreve o timeout global apenas para essa requisição.</p>
+    </div>
+
+    <div class="api-item">
+      <code>signal?: AbortSignal</code>
+      <p>Signal do AbortController para cancelamento manual.</p>
+      <pre><code>const controller = new AbortController();
+const promise = api.get('/users', { signal: controller.signal });
+
+// Cancela após 5 segundos
+setTimeout(() => controller.abort(), 5000);</code></pre>
+    </div>
+
+    <div class="api-item">
+      <code>credentials?: RequestCredentials</code>
       <p>
-        <strong>Resiliência automática:</strong> Se a API falhar por um erro
-        temporário no servidor (Erro 500), a biblioteca tenta realizar a chamada
-        novamente antes de mostrar um erro ao usuário.
+        Controla envio de cookies. Valores: 'omit', 'same-origin', 'include'.
       </p>
     </div>
+
+    <div class="api-item">
+      <code>mode?: RequestMode</code>
+      <p>Modo CORS. Valores: 'cors', 'no-cors', 'same-origin'.</p>
+    </div>
+  </div>
+
+  <h3>Interceptors</h3>
+
+  <div class="api-list">
+    <div class="api-item">
+      <h4>addRequestInterceptor(interceptor)</h4>
+      <p>
+        Adiciona uma função que será executada antes de cada requisição ser
+        enviada. Permite modificar endpoint e opções.
+      </p>
+      <pre><code>api.addRequestInterceptor((endpoint, options) => {
+  // Modifica options
+  options.headers = {
+    ...options.headers,
+    Authorization: `Bearer ${getToken()}`
+  };
+  
+  // Retorna [endpoint, options] modificados
+  return [endpoint, options];
+});</code></pre>
+      <p><strong>Assíncrono:</strong> Pode retornar Promise ou valor direto.</p>
+    </div>
+
+    <div class="api-item">
+      <h4>addResponseInterceptor(interceptor)</h4>
+      <p>
+        Adiciona uma função que será executada após receber a resposta, mas
+        antes do parsing. Permite modificar ou inspecionar a Response.
+      </p>
+      <pre><code>api.addResponseInterceptor((response) => {
+  console.log('Status:', response.status);
+  console.log('Headers:', response.headers);
+  
+  // Retorna response (modificado ou não)
+  return response;
+});</code></pre>
+    </div>
+
+    <div class="api-item">
+      <h4>addResponseErrorInterceptor(interceptor)</h4>
+      <p>
+        Adiciona uma função que será executada quando ocorrer um erro. Permite
+        tratamento global, logging ou retry manual.
+      </p>
+      <pre><code>api.addResponseErrorInterceptor((error) => {
+  // Tratamento global
+  if (error.status === 401) {
+    redirectToLogin();
+  }
+  
+  // Re-lança o erro para tratamento local
+  throw error;
+});</code></pre>
+      <p>
+        <strong>Importante:</strong> Deve sempre lançar o erro novamente (throw)
+        ao final.
+      </p>
+    </div>
+  </div>
+
+  <h3>ApiError</h3>
+  <p>Objeto de erro lançado quando uma requisição falha:</p>
+
+  <div class="api-list">
+    <div class="api-item">
+      <code>message: string</code>
+      <p>
+        Descrição textual do erro (ex: "Not Found", "Internal Server Error").
+      </p>
+    </div>
+
+    <div class="api-item">
+      <code>status?: number</code>
+      <p>Código de status HTTP (ex: 404, 500, 401).</p>
+    </div>
+
+    <div class="api-item">
+      <code>data?: unknown</code>
+      <p>
+        Corpo da resposta de erro enviado pelo servidor, se disponível. Pode
+        conter detalhes adicionais.
+      </p>
+    </div>
+  </div>
+
+  <pre><code>try {
+  await api.get('/users/999');
+} catch (error) {
+  console.log(error.message);  // "Not Found"
+  console.log(error.status);   // 404
+  console.log(error.data);     // { detail: "User not found" }
+}</code></pre>
+
+  <h3>TypeScript</h3>
+  <p>O Ease-Fetch é construído em TypeScript com suporte completo a tipos:</p>
+
+  <div class="api-item">
+    <h4>Tipos de Resposta Genéricos</h4>
+    <pre><code>interface User {
+  id: number;
+  name: string;
+  email: string;
+  createdAt: string;
+}
+
+interface ApiResponse&lt;T&gt; {
+  data: T;
+  meta: {
+    page: number;
+    total: number;
+  };
+}
+
+// TypeScript infere o tipo corretamente
+const response = await api.get&lt;ApiResponse&lt;User[]&gt;&gt;('/users');
+response.data[0].email; // ✅ Type-safe
+response.meta.page;     // ✅ Type-safe</code></pre>
+  </div>
+
+  <div class="api-item">
+    <h4>Tipos Exportados</h4>
+    <pre><code>import type {
+  ApiClient,
+  ApiClientOptions,
+  RequestOptions,
+  ApiError,
+  RequestInterceptor,
+  ResponseInterceptor,
+  ResponseErrorInterceptor,
+  HeadersObj
+} from 'ease-fetch';</code></pre>
   </div>
 </section>

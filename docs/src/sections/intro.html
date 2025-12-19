@@ -1,0 +1,160 @@
+<section>
+  <h2>🎯 O que é Ease-Fetch?</h2>
+  <p>
+    Ease-Fetch é um wrapper moderno e type-safe para requisições HTTP que
+    elimina a complexidade do fetch nativo. Construído em TypeScript, oferece
+    uma API fluente e previsível para consumo de APIs REST.
+  </p>
+
+  <h3>Por que Ease-Fetch?</h3>
+  <div class="api-list">
+    <div class="api-item">
+      <h4>🔄 Retry Automático com Backoff Exponencial</h4>
+      <p>
+        Requisições idempotentes (GET, PUT, DELETE) são automaticamente
+        reexecutadas em caso de falhas de servidor (5xx). O tempo de espera
+        entre tentativas aumenta exponencialmente: 300ms, 600ms, 1200ms,
+        reduzindo a carga no servidor.
+      </p>
+      <pre><code>// Configura até 3 tentativas automáticas
+const api = createApiClient({
+  maxRetries: 3
+});
+
+// Se o servidor retornar 500, a lib tenta automaticamente
+await api.get('/users'); // Retry automático em caso de erro 5xx</code></pre>
+    </div>
+
+    <div class="api-item">
+      <h4>⚡ Sistema de Interceptors Completo</h4>
+      <p>
+        Intercepte e modifique requisições antes de enviá-las ou respostas antes
+        de processá-las. Perfeito para autenticação, logging, transformação de
+        dados e tratamento global de erros.
+      </p>
+      <pre><code>// Request Interceptor - adiciona token em todas requisições
+api.addRequestInterceptor((endpoint, options) => {
+  const token = getAuthToken();
+  options.headers = {
+    ...options.headers,
+    Authorization: `Bearer ${token}`
+  };
+  return [endpoint, options];
+});
+
+// Response Interceptor - transforma todas respostas
+api.addResponseInterceptor((response) => {
+  console.log('Status:', response.status);
+  return response;
+});
+
+// Error Interceptor - tratamento global de erros
+api.addResponseErrorInterceptor((error) => {
+  if (error.status === 401) {
+    redirectToLogin();
+  }
+  throw error;
+});</code></pre>
+    </div>
+
+    <div class="api-item">
+      <h4>⏱️ Timeout Configurável e Gerenciamento de AbortController</h4>
+      <p>
+        Protege sua aplicação de requisições travadas. Cada requisição tem um
+        timeout padrão de 10 segundos, mas você pode configurar globalmente ou
+        por requisição.
+      </p>
+      <pre><code>// Timeout global de 5 segundos
+const api = createApiClient({
+  timeoutMs: 5000
+});
+
+// Override para requisição específica
+await api.get('/slow-endpoint', {
+  timeoutMs: 30000 // 30 segundos para esse endpoint
+});</code></pre>
+    </div>
+
+    <div class="api-item">
+      <h4>📦 Detecção Automática de Content-Type</h4>
+      <p>
+        JSON, FormData, Blob - a biblioteca detecta e envia corretamente sem
+        configuração manual de headers.
+      </p>
+      <pre><code>// JSON automático
+await api.post('/users', { name: 'John' });
+
+// FormData automático (sem definir Content-Type)
+const formData = new FormData();
+formData.append('file', file);
+await api.post('/upload', formData);
+
+// Blob automático
+await api.post('/image', blobData);</code></pre>
+    </div>
+
+    <div class="api-item">
+      <h4>🛡️ Type-Safety Nativo</h4>
+      <p>
+        Construído em TypeScript com tipos genéricos para respostas tipadas e
+        autocomplete completo.
+      </p>
+      <pre><code>interface User {
+  id: number;
+  name: string;
+  email: string;
+}
+
+// TypeScript sabe que data é User[]
+const data = await api.get&lt;User[]&gt;('/users');
+data[0].email; // ✅ Autocomplete funciona</code></pre>
+    </div>
+
+    <div class="api-item">
+      <h4>🎨 API Limpa e Intuitiva</h4>
+      <p>
+        Métodos HTTP semânticos (get, post, put, patch, delete) com assinatura
+        consistente. Sem surpresas, sem complexidade desnecessária.
+      </p>
+      <pre><code>const api = createApiClient({ baseURL: 'https://api.example.com' });
+
+// GET
+const users = await api.get('/users');
+
+// POST
+const newUser = await api.post('/users', { name: 'John' });
+
+// PUT
+const updated = await api.put('/users/1', { name: 'Jane' });
+
+// PATCH
+const patched = await api.patch('/users/1', { email: 'new@example.com' });
+
+// DELETE
+await api.delete('/users/1');</code></pre>
+    </div>
+  </div>
+
+  <h3>Arquitetura</h3>
+  <p>O Ease-Fetch opera em três camadas principais:</p>
+  <ol>
+    <li>
+      <strong>Interceptors Layer:</strong> Processa requisições e respostas
+      através de uma cadeia de interceptors
+    </li>
+    <li>
+      <strong>Retry Layer:</strong> Gerencia tentativas automáticas com backoff
+      exponencial para métodos idempotentes
+    </li>
+    <li>
+      <strong>Transport Layer:</strong> Executa a requisição HTTP usando fetch
+      nativo com timeout e AbortController
+    </li>
+  </ol>
+
+  <div class="card">
+    <p><strong>Fluxo de uma requisição:</strong></p>
+    <pre><code>Request → Request Interceptors → Fetch + Timeout → Retry (se necessário)
+  → Response Interceptors → Parse JSON → Error Interceptors (se erro) → Return</code></pre>
+  </div>
+</section>
