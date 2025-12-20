@@ -14,7 +14,7 @@ const CONFIG = {
 const SectionService = {
   async fetch(id) {
     try {
-      const response = await fetch(`./sections/${id}.html`);
+      const response = await fetch(`./src/sections/${id}.html`);
       return response.ok ? await response.text() : "";
     } catch {
       return "";
@@ -32,7 +32,6 @@ const UI = {
       })
     );
 
-    this.setupCopyButtons();
     this.setupNavigation();
   },
 
