@@ -36,23 +36,6 @@ const UI = {
     this.setupNavigation();
   },
 
-  setupCopyButtons() {
-    document.querySelectorAll("pre").forEach((block) => {
-      if (block.querySelector(".copy-btn")) return;
-
-      const btn = document.createElement("button");
-      btn.className = "copy-btn";
-      btn.innerText = "Copiar";
-      btn.onclick = () => {
-        const text = block.querySelector("code").innerText;
-        navigator.clipboard.writeText(text);
-        btn.innerText = "Copiado!";
-        setTimeout(() => (btn.innerText = "Copiar"), 2000);
-      };
-      block.appendChild(btn);
-    });
-  },
-
   setupNavigation() {
     const links = document.querySelectorAll("nav a");
 

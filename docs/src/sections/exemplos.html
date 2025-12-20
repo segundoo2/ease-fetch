@@ -223,19 +223,19 @@ searchInput.addEventListener('input', async (e) => {
   const query = e.target.value;
   
   try {
-    resultsDiv.innerHTML = '<p>Buscando...</p>';
+    resultsDiv.innerHTML = '&ltp&gtBuscando...&lt/p&gt';
     const results = await searchService.search(query);
     
     if (results.length === 0) {
-      resultsDiv.innerHTML = '<p>Nenhum resultado encontrado</p>';
+      resultsDiv.innerHTML = '&ltp&gtNenhum resultado encontrado&lt/p&gt';
     } else {
       resultsDiv.innerHTML = results
-        .map(user => `<div>${user.name} - ${user.email}</div>`)
+        .map(user => `&ltdiv&gt${user.name} - ${user.email}&lt/div&gt`)
         .join('');
     }
   } catch (error) {
     if (error.name !== 'AbortError') {
-      resultsDiv.innerHTML = `<p>Erro: ${error.message}</p>`;
+      resultsDiv.innerHTML = `&ltp&gtErro: ${error.message}&lt/p&gt`;
     }
   }
 });</code></pre>

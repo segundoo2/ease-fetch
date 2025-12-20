@@ -189,32 +189,9 @@ pre {
 }
 
 pre code {
-  font-size: 0.9rem;
+  font-size: 1.05rem;
   line-height: 1.6;
-  color: var(--text);
-}
-
-.copy-btn {
-  position: absolute;
-  top: 10px;
-  right: 10px;
-  background: var(--bg-card);
-  color: var(--text-dim);
-  border: 1px solid var(--border);
-  padding: 6px 12px;
-  border-radius: 6px;
-  cursor: pointer;
-  font-size: 0.75rem;
-  font-weight: 600;
-  font-family: "Inter", sans-serif;
-  transition: all 0.2s ease;
-}
-
-.copy-btn:hover {
-  background: var(--primary);
-  color: var(--bg);
-  border-color: var(--primary);
-  transform: translateY(-1px);
+  color: var(--accent) !important;
 }
 
 .api-list {
@@ -238,9 +215,7 @@ pre code {
 
 .api-item code {
   color: var(--accent);
-  font-size: 1.05rem;
   font-weight: 600;
-  background: rgba(239, 233, 12, 0.1);
   padding: 2px 6px;
   border-radius: 4px;
 }
