@@ -23,9 +23,9 @@ jobs:
       - name: Create ZIP file
         run: |
           cd release-temp
-          zip -r ../ease-fetch.zip ease-fetch/src
+          zip -r ../ease-fetch-src.zip ease-fetch/src
           cd ..
-          ls -lh ease-fetch.zip
+          ls -lh ease-fetch-src.zip
 
       - name: Upload ZIP to Release
         uses: softprops/action-gh-release@v1
